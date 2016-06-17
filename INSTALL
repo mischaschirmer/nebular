@@ -1,0 +1,15 @@
+To install NEBULAR, change to the "src/" directory, and type 'make'.
+The executable, 'nebular', can be copied anywhere in your path.
+
+
+Before you run NEBULAR, you must set the NEBULAR environment variable,
+so that NEBULAR can find its data tables:
+
+
+for bash:
+export NEBULAR=/somepath/nebular-1.0/data/
+
+for cshrc:
+setenv NEBULAR /somepath/nebular-1.0/data/
+
+You may permanently set this in ~/.bashrc or ~/.cshrc
