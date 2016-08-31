@@ -60,7 +60,7 @@ class spectrum {
   void initialize(bool, vector<double>&, char*);
 
   // Normalize the spectrum
-  void normalize(const double, const vector<double>);
+  void normalize(const double, const vector<double>, const int);
   
   // Conversions
   void nu_to_lambda();
@@ -71,7 +71,8 @@ class spectrum {
   // Write results
   void output(const double, const double, const double, 
 	      const vector<double>, const vector<double>,
-	      const char*, const bool, const double);
+	      const char*, const bool, const double, 
+	      const int);
   
 };
 
