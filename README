@@ -1,0 +1,25 @@
+NEBULAR is a lightweight code to synthesize the spectrum of a
+mixed hydrogen helium gas in collisional ionization equilibrium. 
+It is not a spectral fitting code, but it can be used to resample 
+a model spectrum onto the wavelength grid of a real observation.
+
+Supported are a wide range of temperatures and densities.
+NEBULAR includes free-free, free-bound, two-photon and line emission
+from HI, HeI and HeII. The code will either return the composite
+model spectrum, or - if desired - the unrescaled atomic emission 
+coefficients.
+
+WARNING:
+Ionization fractions are calculated by solving the Saha equation.
+These fractions might be far off the real values in a true astrophysical
+nebula; the fractions can be overridden on the command-line using
+user-supplied values.
+NEBULAR is not a photo-ionization code; if you want that, you must use 
+something much more sophisticated such as CLOUDY.
+
+EXAMPLE runs can be found in the appendix of 
+http://arxiv.org/abs/1608.03132
+This paper also serves as the primary documentation.
+
+To get a list of command-line options, run the nebular executable 
+without arguments.
