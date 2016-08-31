@@ -40,7 +40,7 @@ using namespace std;
 void usage()
 {
   cerr <<  "\n";
-  cerr <<  "  This is NEBULAR v1.0" << endl;
+  cerr <<  "  This is NEBULAR v1.1" << endl;
   cerr <<  "  ====================\n" << endl;
   cerr <<  "  PURPOSE: Calculates the nebular spectrum for a mixed hydrogen helium gas in" << endl;
   cerr <<  "           ionization equilibrium, including bound-free, free-free, two-photon" << endl;
@@ -49,21 +49,27 @@ void usage()
   cerr <<  "           range including step size, or on a pre-defined grid." << endl;
   cerr <<  "           The input can be in wavelengths (Angstrom) or in frequencies (Hz)." << endl;
   cerr <<  "           Wavelengths are assumed if numeric values for the range/grid are <1e7." << endl;
-  cerr <<  "           The output spectrum will be scaled in F_lambda or F_nu, depending on" << endl;
-  cerr <<  "           whether wavelenghts or frequencies are given.\n" << endl;
+  cerr <<  "           The output spectrum will be scaled in j_lambda or j_nu, depending on" << endl;
+  cerr <<  "           whether wavelenghts or frequencies are given." << endl;
+  cerr <<  "           Alternatively, the atomic values for gamma (or nu*gamma) can be returned.\n" << endl;
   cerr <<  "  OPTIONS (mandatory):" << endl;
-  cerr <<  "           -r range_min range_max range_delta (Angstrom or Hz)" << endl;
-  cerr <<  "               --OR--" << endl;
+  cerr <<  "           -r range_min range_max range_delta (Angstrom or Hz)    --OR--" << endl;
   cerr <<  "           -i input wavelength/frequency table (ASCII)\n" << endl;
-  cerr <<  "           -t electron temperature" << endl;
-  cerr <<  "           -n electron density\n" << endl;
+  cerr <<  "           -t electron temperature [K]" << endl;
+  cerr <<  "           -n electron number density [cm-3]\n" << endl;
   cerr <<  "  OPTIONS (optional):" << endl;
   cerr <<  "          [-f H+ He+ He++ ionization fractions (0...1); calculated internally if omitted]" << endl;
   cerr <<  "          [-o output file name (default: 'nebular_spectrum.dat')]" << endl;
   cerr <<  "          [-a Helium abundance ratio by parts (default: 0.10)]" << endl;
+  cerr <<  "          [-k (omits emission line spectrum; for faster calculations of the continuum)]" << endl;
   cerr <<  "          [-c A or B (Case A or Case B for the emission lines; default: B)" << endl;
   cerr <<  "          [-w FWHM (Convolve total spectrum with a Gaussian of this FWHM [Angstrom or Hz]) ]" << endl;
-  cerr <<  "          [-b (Suppress header line in output file)]\n" << endl;
+  cerr <<  "          [-b (Suppress header line in output file)]" << endl;
+  cerr <<  "          [-u format (0, 1 or 2; default: 0); selects output units]" << endl;
+  cerr <<  "              0: outputs j = 1/(4 pi) N_X N_e gamma" << endl;
+  cerr <<  "              1: outputs gamma (provides access to the atomic data tables)" << endl;
+  cerr <<  "              2: outputs nu*gamma (for convencience)\n" << endl;
+
   exit(1);
 }
 
@@ -74,6 +80,8 @@ int main(int argc, char *argv[])
   long i;
   bool flag_ingrid = false, flag_range = false, exitcondition = false;
   bool suppress_headerline = false;
+  bool suppress_emissionlines = false;
+  int output_format = 0;
   string lymancase = "B";
   double nuser = 0.;
   double Tuser = 0.;
@@ -132,6 +140,10 @@ int main(int argc, char *argv[])
       case 'c': lymancase = argv[++i];
         break;
       case 'b': suppress_headerline = true;
+        break;
+      case 'k': suppress_emissionlines = true;
+        break;
+      case 'u': output_format = atoi(argv[++i]);
         break;
       }
     }
@@ -267,28 +279,29 @@ int main(int argc, char *argv[])
   // Emission lines
   //*************************************************
   // The constructors reads the Storey & Hummer (1995) and/or Storey & Sotchi (2015) tables
-  cout << "-- Calculating emission line spectrum ..." << endl;
   emissionline HI_lines("HI", lymancase, Tuser, nuser);
   emissionline HeI_lines("HeI", lymancase, Tuser, nuser);
   emissionline HeII_lines("HeII", lymancase, Tuser, nuser);
-  if (Tuser<=5.e4) 
-    HI_lines.calculate_emissionlines(result, Tuser, nuser);
-  if (Tuser >= 5.e3 && Tuser <= 2.5e4 && nuser >= 10 && nuser <= 1e14 && lymancase.compare("B")==0) {
-    HeI_lines.calculate_emissionlines_HeI(result, Tuser, nuser);
+  if (!suppress_emissionlines) {
+    cout << "-- Calculating emission line spectrum ..." << endl;
+    if (Tuser<=5.e4) 
+      HI_lines.calculate_emissionlines(result, Tuser, nuser);
+    if (Tuser >= 5.e3 && Tuser <= 2.5e4 && nuser >= 10 && nuser <= 1e14 && lymancase.compare("B")==0) {
+      HeI_lines.calculate_emissionlines_HeI(result, Tuser, nuser);
+    }
+    HeII_lines.calculate_emissionlines(result, Tuser, nuser);
   }
-  HeII_lines.calculate_emissionlines(result, Tuser, nuser);
-
 
   //************************************************************************
   // Part 4: Calculate the resulting spectrum and write result.
   // This includes corrections for the Helium abundance, the ionization 
-  // fractions, and conversion from gamma to j
+  // fractions, and conversion from gamma to j, if applicable
   //************************************************************************
-  result.normalize(nuser, iondens);
+  result.normalize(nuser, iondens, output_format);
 
   //******************************************************************************
   // Write output file; also converts F_nu to F_lambda if input was in wavelengths
   //******************************************************************************
   result.output(Tuser, nuser, abundance_helium, ionfracs, iondens, output_file, 
-		suppress_headerline, kernelfwhm);
+		suppress_headerline, kernelfwhm, output_format);
 }

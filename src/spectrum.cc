@@ -155,57 +155,81 @@ void spectrum::deduce_lambda_or_nu(bool rflag, vector<double> &range, char *inpu
 }
 
 
-//**********************************************
+//*****************************************************************************
 // Renormalize the spectrum according to Helium 
-// abundance and ionization fractions;
+// abundance and ionization fractions if requested (output_format = 0; default)
 // Also add up all components
-//**********************************************
-void spectrum::normalize(const double nuser, const vector<double> iondens)
+//*****************************************************************************
+void spectrum::normalize(const double nuser, const vector<double> iondens, 
+			 const int output_format)
 {
   unsigned long i = 0;
-  double nHII    = iondens[0];
+  double nHII    = iondens[0];   // ionic densities; nuser is the electron density
   double nHeII   = iondens[1];
   double nHeIII  = iondens[2];
-  double rescale = 1./(4.*pi) * nuser;
 
-  for ( auto &tot : total ) {
-    // normalize, and convert gamma to j
-    HI_freebound[i]       *= rescale * nHII;
-    HeI_freebound[i]      *= rescale * nHeII;
-    HeII_freebound[i]     *= rescale * nHeIII;
-    HI_twophoton[i]       *= rescale * nHII;
-    HeI_twophoton[i]      *= rescale * nHeII;
-    HeII_twophoton[i]     *= rescale * nHeIII;
-    HII_freefree[i]       *= rescale * nHII;
-    HeII_freefree[i]      *= rescale * nHeII;
-    HeIII_freefree[i]     *= rescale * nHeIII;
-    HI_emissionlines[i]   *= rescale * nHII;
-    HeI_emissionlines[i]  *= rescale * nHeII;
-    HeII_emissionlines[i] *= rescale * nHeIII;
+  // User output choice: j; multiply gamma with the ionic and electron densities
+  if (output_format == 0) {
+    double rescale = 1./(4.*pi) * nuser;
+    for ( auto &tot : total ) {
+      HI_freebound[i]       *= rescale * nHII;
+      HeI_freebound[i]      *= rescale * nHeII;
+      HeII_freebound[i]     *= rescale * nHeIII;
+      HI_twophoton[i]       *= rescale * nHII;
+      HeI_twophoton[i]      *= rescale * nHeII;
+      HeII_twophoton[i]     *= rescale * nHeIII;
+      HII_freefree[i]       *= rescale * nHII;
+      HeII_freefree[i]      *= rescale * nHeII;
+      HeIII_freefree[i]     *= rescale * nHeIII;
+      HI_emissionlines[i]   *= rescale * nHII;
+      HeI_emissionlines[i]  *= rescale * nHeII;
+      HeII_emissionlines[i] *= rescale * nHeIII;
 
-    
-    /*
-      // more natural units (to compare with OF 2006)
-    HI_freebound[i]       *= frequency[i];
-    HeI_freebound[i]      *= frequency[i];
-    HeII_freebound[i]     *= frequency[i];
-    HI_twophoton[i]       *= frequency[i];
-    HeI_twophoton[i]      *= frequency[i];
-    HeII_twophoton[i]     *= frequency[i];
-    HII_freefree[i]       *= frequency[i];
-    HeII_freefree[i]      *= frequency[i];
-    HeIII_freefree[i]     *= frequency[i];
-    HI_emissionlines[i]   *= frequency[i];
-    HeI_emissionlines[i]  *= frequency[i];
-    HeII_emissionlines[i] *= frequency[i];
-    */    
+      // calculate the total
+      tot = HI_freebound[i] + HeI_freebound[i] + HeII_freebound[i] + 
+	HI_twophoton[i] + HeI_twophoton[i] + HeII_twophoton[i] + 
+	HII_freefree[i] + HeII_freefree[i] + HeIII_freefree[i] +
+	HI_emissionlines[i] + HeI_emissionlines[i] + HeII_emissionlines[i]; 
+      i++;
+    }
+  }
 
-    // calculate the total
-    tot = HI_freebound[i] + HeI_freebound[i] + HeII_freebound[i] + 
-      HI_twophoton[i] + HeI_twophoton[i] + HeII_twophoton[i] + 
-      HII_freefree[i] + HeII_freefree[i] + HeIII_freefree[i] +
-      HI_emissionlines[i] + HeI_emissionlines[i] + HeII_emissionlines[i]; 
-    i++;
+  // User output choice: gamma
+  if (output_format == 1) {
+    // no rescaling; the vectors already contain gamma
+    for ( auto &tot : total ) {
+      // calculate the total
+      tot = HI_freebound[i] + HeI_freebound[i] + HeII_freebound[i] + 
+	HI_twophoton[i] + HeI_twophoton[i] + HeII_twophoton[i] + 
+	HII_freefree[i] + HeII_freefree[i] + HeIII_freefree[i] +
+	HI_emissionlines[i] + HeI_emissionlines[i] + HeII_emissionlines[i]; 
+      i++;
+    }
+  }
+
+  // User output choice: nu*gamma (to compare with e.g. figure 4.1 in OF 2006)
+  if (output_format == 2) {
+    for ( auto &tot : total ) {
+      HI_freebound[i]       *= frequency[i];
+      HeI_freebound[i]      *= frequency[i];
+      HeII_freebound[i]     *= frequency[i];
+      HI_twophoton[i]       *= frequency[i];
+      HeI_twophoton[i]      *= frequency[i];
+      HeII_twophoton[i]     *= frequency[i];
+      HII_freefree[i]       *= frequency[i];
+      HeII_freefree[i]      *= frequency[i];
+      HeIII_freefree[i]     *= frequency[i];
+      HI_emissionlines[i]   *= frequency[i];
+      HeI_emissionlines[i]  *= frequency[i];
+      HeII_emissionlines[i] *= frequency[i];
+
+      // calculate the total
+      tot = HI_freebound[i] + HeI_freebound[i] + HeII_freebound[i] + 
+	HI_twophoton[i] + HeI_twophoton[i] + HeII_twophoton[i] + 
+	HII_freefree[i] + HeII_freefree[i] + HeIII_freefree[i] +
+	HI_emissionlines[i] + HeI_emissionlines[i] + HeII_emissionlines[i]; 
+      i++;
+    }
   }
 }
 
@@ -361,9 +385,8 @@ void spectrum::lambda_to_nu()
 void spectrum::output(const double Tuser, const double nuser, const double abundance, 
 		      const vector<double> ionfracs, const vector<double> iondens,
 		      const char *output_file, const bool suppress_headerline,
-		      const double kernelfwhm)
+		      const double kernelfwhm, const int output_format)
 {
-
   // Convert F_nu to F_lambda if input range is in wavelengths
   if (flag_lambda) nu_to_lambda();
 
@@ -402,6 +425,34 @@ void spectrum::output(const double Tuser, const double nuser, const double abund
     outfile << "# Total matter density [g cm-3] : " << iondens[4] << endl;
     outfile << "#" << endl;
   }
+  
+  string col_fb, col_ff, col_2q, col_nn, totals, totalunits;
+  if (output_format == 0) {
+    col_fb = "j_fb";
+    col_ff = "j_ff";
+    col_2q = "j_2q";
+    col_nn = "j_nn'";
+    totals = "j_nu";
+    if (!flag_lambda) totalunits = "(erg s-1 cm-3 Hz-1)";
+    else totalunits = "(erg s-1 cm-3 A-1)";
+  }
+  if (output_format == 1) {
+    col_fb = "gamma_fb";
+    col_ff = "gamma_ff";
+    col_2q = "gamma_2q";
+    col_nn = "gamma_nn'";
+    totals = "gamma_nu";
+    if (!flag_lambda) totalunits = "(erg s-1 cm+3 Hz-1)";
+    else totalunits = "(erg s-1 cm+3 A-1)";
+  }
+  if (output_format == 2) {
+    col_fb = "nu*gamma_fb";
+    col_ff = "nu*gamma_ff";
+    col_2q = "nu*gamma_2q";
+    col_nn = "nu*gamma_nn'";
+    totals = "nu*gamma_nu";
+    totalunits = "(erg s-1 cm-3)";
+  }
 
   long i = 0;
   cout.precision(6);
@@ -409,21 +460,21 @@ void spectrum::output(const double Tuser, const double nuser, const double abund
     if (!suppress_headerline) {
       outfile << "# Col 1:  Frequency [Hz]" << endl;
       outfile << "# Col 2:  Wavelength [A]" << endl;
-      outfile << "# Col 3:  Total emissivity: j_nu (erg s-1 cm-2 Hz-1)" << endl;
-      outfile << "# Col 4:  j_fb (free-bound HI)" << endl;
-      outfile << "# Col 5:  j_fb (free-bound HeI)" << endl;
-      outfile << "# Col 6:  j_fb (free-bound HeII)" << endl;
-      outfile << "# Col 7:  j_2q (two-photon HI)" << endl;
-      outfile << "# Col 8:  j_2q (two-photon HeI)" << endl;
-      outfile << "# Col 9:  j_2q (two-photon HeII)" << endl;
-      outfile << "# Col 10:  j_ff (free-free HII)" << endl;
-      outfile << "# Col 11: j_ff (free-free HeII)" << endl;
-      outfile << "# Col 12: j_ff (free-free HeIII)" << endl;
-      outfile << "# Col 13: j_nn' (HI   recombination lines)" << endl;
-      outfile << "# Col 14: j_nn' (HeI  recombination lines)" << endl;
-      outfile << "# Col 15: j_nn' (HeII recombination lines)" << endl;
+      outfile << "# Col 3:  Total emissivity: " << totals << " " << totalunits << endl;
+      outfile << "# Col 4:  " << col_fb << "(free-bound HI)"   << endl;
+      outfile << "# Col 5:  " << col_fb << "(free-bound HeI)"  << endl;
+      outfile << "# Col 6:  " << col_fb << "(free-bound HeII)" << endl;
+      outfile << "# Col 7:  " << col_2q << "(two-photon HI)"   << endl;
+      outfile << "# Col 8:  " << col_2q << "(two-photon HeI)"  << endl;
+      outfile << "# Col 9:  " << col_2q << "(two-photon HeII)" << endl;
+      outfile << "# Col 10: " << col_ff << "(free-free HII)"   << endl;
+      outfile << "# Col 11: " << col_ff << "(free-free HeII)"  << endl;
+      outfile << "# Col 12: " << col_ff << "(free-free HeIII)" << endl;
+      outfile << "# Col 13: " << col_nn << "(HI   recombination lines)" << endl;
+      outfile << "# Col 14: " << col_nn << "(HeI  recombination lines)" << endl;
+      outfile << "# Col 15: " << col_nn << "(HeII recombination lines)" << endl;
       outfile << "#" << endl;
-      outfile << "# nu lambda j_nu fb_HI fb_HeI fb_HeII 2q_HI 2q_HeI 2q_HeII ff_HII ff_HeII ff_HeIII eml_HI eml_HeI eml_HeII" << endl;
+      outfile << "# nu lambda " << totals << "fb_HI fb_HeI fb_HeII 2q_HI 2q_HeI 2q_HeII ff_HII ff_HeII ff_HeIII eml_HI eml_HeI eml_HeII" << endl;
     }
 
     for ( auto &it : frequency ) {
@@ -455,21 +506,21 @@ void spectrum::output(const double Tuser, const double nuser, const double abund
     if (!suppress_headerline) {
       outfile << "# Col 1:  Frequency [Hz]" << endl;
       outfile << "# Col 2:  Wavelength [A]" << endl;
-      outfile << "# Col 3:  Total spectrum: j_lambda (erg s-1 cm-2 A-1)" << endl;
-      outfile << "# Col 4:  j_fb (free-bound HI)" << endl;
-      outfile << "# Col 5:  j_fb (free-bound HeI)" << endl;
-      outfile << "# Col 6:  j_fb (free-bound HeII)" << endl;
-      outfile << "# Col 7:  j_2q (two-photon HI)" << endl;
-      outfile << "# Col 8:  j_2q (two-photon HeI)" << endl;
-      outfile << "# Col 9:  j_2q (two-photon HeII)" << endl;
-      outfile << "# Col 10:  j_ff (free-free HII)" << endl;
-      outfile << "# Col 11: j_ff (free-free HeII)" << endl;
-      outfile << "# Col 12: j_ff (free-free HeIII)" << endl;
-      outfile << "# Col 13: j_nn' (HI   recombination lines)" << endl;
-      outfile << "# Col 14: j_nn' (HeI  recombination lines)" << endl;
-      outfile << "# Col 15: j_nn' (HeII recombination lines)" << endl;
+      outfile << "# Col 3:  Total emissivity: " << totals << " " << totalunits << endl;
+      outfile << "# Col 4:  " << col_fb << "(free-bound HI)"   << endl;
+      outfile << "# Col 5:  " << col_fb << "(free-bound HeI)"  << endl;
+      outfile << "# Col 6:  " << col_fb << "(free-bound HeII)" << endl;
+      outfile << "# Col 7:  " << col_2q << "(two-photon HI)"   << endl;
+      outfile << "# Col 8:  " << col_2q << "(two-photon HeI)"  << endl;
+      outfile << "# Col 9:  " << col_2q << "(two-photon HeII)" << endl;
+      outfile << "# Col 10: " << col_ff << "(free-free HII)"   << endl;
+      outfile << "# Col 11: " << col_ff << "(free-free HeII)"  << endl;
+      outfile << "# Col 12: " << col_ff << "(free-free HeIII)" << endl;
+      outfile << "# Col 13: " << col_nn << "(HI   recombination lines)" << endl;
+      outfile << "# Col 14: " << col_nn << "(HeI  recombination lines)" << endl;
+      outfile << "# Col 15: " << col_nn << "(HeII recombination lines)" << endl;
       outfile << "#" << endl;
-      outfile << "# nu lambda j_lambda fb_HI fb_HeI fb_HeII 2q_HI 2q_HeI 2q_HeII ff_HII ff_HeII ff_HeIII eml_HI eml_HeI eml_HeII" << endl;
+      outfile << "# nu lambda " << totals << "fb_HI fb_HeI fb_HeII 2q_HI 2q_HeI 2q_HeII ff_HII ff_HeII ff_HeIII eml_HI eml_HeI eml_HeII" << endl;
     }
 
     for (i=lambda.size()-1; i>=0; i--) {
